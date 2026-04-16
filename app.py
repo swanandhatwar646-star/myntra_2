@@ -30,6 +30,7 @@ def form_input():
         scrapped_data = scrapper.get_review_data()
         if scrapped_data is not None:
             st.session_state["data"] = True
+            st.session_state["scrapped_data"] = scrapped_data  # Store for analysis page
             mysql_io = MySQLIO()
             mysql_io.store_reviews(product_name=product, reviews=scrapped_data)
             print("Stored Data into MySQL")

@@ -10,17 +10,25 @@ class MySQLIO:
     connection = None
 
     def __init__(self):
-        self.is_cloud = os.getenv('STREAMLIT_RUNTIME_ENVIRONMENT') == 'cloud'
+        # Better cloud detection - check multiple indicators
+        self.is_cloud = (
+            os.getenv('STREAMLIT_RUNTIME_ENVIRONMENT') == 'cloud' or
+            os.getenv('HOME') == '/home/adminuser' or
+            'streamlit.app' in os.getenv('PYTHONPATH', '') or
+            not os.path.exists('/var/lib/mysql')
+        )
+        
         self.connection = None
         
         if self.is_cloud:
             # Cloud deployment - skip database operations
+            print("Running in cloud mode - using mock database operations")
             self.connection = None
             return
             
         # Local development - try to connect to MySQL
         if MySQLIO.connection is None or not MySQLIO.connection.is_connected():
-            # Try to get credentials from Streamlit secrets first (for cloud deployment)
+            # Try to get credentials from Streamlit secrets first
             try:
                 import streamlit as st
                 host = st.secrets["mysql"]["host"]
@@ -28,7 +36,7 @@ class MySQLIO:
                 password = st.secrets["mysql"]["password"]
                 database = st.secrets["mysql"]["database"]
             except:
-                # Fallback to environment variables (for local development)
+                # Fallback to environment variables
                 host = os.getenv(MYSQL_HOST_KEY, "localhost")
                 user = os.getenv(MYSQL_USER_KEY, "root")
                 password = os.getenv(MYSQL_PASSWORD_KEY, "")
@@ -42,8 +50,11 @@ class MySQLIO:
                     password=password,
                     database=database
                 )
+                print("MySQL connection successful")
             except Error as e:
                 print(f"MySQL connection failed: {e}")
+                print("Switching to cloud mode (mock operations)")
+                self.is_cloud = True
                 MySQLIO.connection = None
 
         self.connection = MySQLIO.connection

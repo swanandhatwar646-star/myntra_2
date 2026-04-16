@@ -1,14 +1,16 @@
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()
-from src.cloud_io import MySQLIO
-from src.constants import SESSION_PRODUCT_KEY
-from src.scrapper.scrape import ScrapeReviews
+
+# Direct imports from src modules
+from cloud_io import MySQLIO
+from constants import SESSION_PRODUCT_KEY
+from scrapper.scrape import ScrapeReviews
 
 st.set_page_config("myntra-review-scrapper")
 

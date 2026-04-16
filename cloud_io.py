@@ -10,6 +10,15 @@ class MySQLIO:
     connection = None
 
     def __init__(self):
+        self.is_cloud = os.getenv('STREAMLIT_RUNTIME_ENVIRONMENT') == 'cloud'
+        self.connection = None
+        
+        if self.is_cloud:
+            # Cloud deployment - skip database operations
+            self.connection = None
+            return
+            
+        # Local development - try to connect to MySQL
         if MySQLIO.connection is None or not MySQLIO.connection.is_connected():
             # Try to get credentials from Streamlit secrets first (for cloud deployment)
             try:
@@ -34,7 +43,8 @@ class MySQLIO:
                     database=database
                 )
             except Error as e:
-                raise Exception(f"MySQL connection failed: {e}")
+                print(f"MySQL connection failed: {e}")
+                MySQLIO.connection = None
 
         self.connection = MySQLIO.connection
 
@@ -70,6 +80,11 @@ class MySQLIO:
         cursor.close()
 
     def store_reviews(self, product_name: str, reviews: pd.DataFrame):
+        if self.is_cloud or self.connection is None:
+            # Mock storage for cloud deployment
+            print(f"Mock storing {len(reviews)} reviews for product: {product_name}")
+            return
+            
         try:
             table_name = self._sanitize_table_name(product_name)
             self._create_table_if_not_exists(table_name)
@@ -100,6 +115,11 @@ class MySQLIO:
             raise CustomException(e, sys)
 
     def get_reviews(self, product_name: str) -> pd.DataFrame:
+        if self.is_cloud or self.connection is None:
+            # Mock retrieval for cloud deployment
+            print(f"Mock retrieving reviews for product: {product_name}")
+            return pd.DataFrame()
+            
         try:
             table_name = self._sanitize_table_name(product_name)
             cursor = self.connection.cursor(dictionary=True)
